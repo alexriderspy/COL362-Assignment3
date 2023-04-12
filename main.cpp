@@ -9,12 +9,12 @@
 #include<bits/stdc++.h>
 using namespace std;
 
-const int MAX_CHAR = 26;
+const int MAX_CHAR = 256;
 
 //#define M (1<<21)
 //#define Mb (1<<30)
 #define M 10
-#define Mb 1000
+#define Mb 100
 
 string sorted_arr[Mb];
 int sz;
@@ -110,7 +110,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     ptr = fopen(input, "r");
 
     long bufferSize = Mb;
-    cout<<bufferSize<<'\n';
+    //cout<<bufferSize<<'\n';
     char* buffer = new char[bufferSize];
     
     //while stage
@@ -131,7 +131,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     char* out;
     int cnt = 0;
     while(fgets(buffer, bufferSize, ptr) != NULL) {
-        cout<<buffer<<endl;
+        cout<<buffer;
 
         int len = sizeof(buffer)/sizeof(char)-1;
         if (cnt + len <= bufferSize){
@@ -149,7 +149,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
             ptr_new = fopen(char_array, "w");
             string fin = "";
             for (int i=0;i<arr.size();++i){
-                fin += arr[i];
+                fin += sorted_arr[i];
             }
             char *a = new char[fin.size()];
             strcpy(a, fin.c_str());
@@ -169,7 +169,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
         ptr_new = fopen(char_array, "w");
         string fin = "";
         for (int i=0;i<arr.size();++i){
-            fin += arr[i];
+            fin += sorted_arr[i];
         }
         char *a = new char[fin.size()+1];
         strcpy(a, fin.c_str());
