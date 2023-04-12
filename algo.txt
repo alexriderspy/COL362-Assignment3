@@ -1,0 +1,33 @@
+while(!end of file){
+    read first M characters till the last \n
+    make vector of strings
+    sort 
+    write to temp.0.i
+}
+
+L=
+x=
+
+output=L
+
+
+(x+1)L= M
+
+output_vec
+
+arr of ptrs
+
+while(1){
+    cnt = 0
+    stage=1
+    i=1
+    for (ptr in ptrs){
+        min = min(*ptr of all ptrs)
+        store in output_vec
+        if (cnt=L)
+            write to file temp.stage.i
+    }
+    if (i does not become 2){
+        finish
+    }
+}
