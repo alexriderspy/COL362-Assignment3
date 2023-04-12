@@ -5,8 +5,8 @@
 #include <cmath>
 #include <iostream>
 #include<vector>
+#include <queue>
 
-#include<bits/stdc++.h>
 using namespace std;
 
 const int MAX_CHAR = 256;
@@ -15,6 +15,8 @@ const int MAX_CHAR = 256;
 //#define Mb (1<<30)
 #define M 10
 #define Mb 100
+#define L 10
+#define Lb 100
 
 string sorted_arr[Mb];
 int sz;
@@ -94,14 +96,89 @@ void sort(vector<string> arr){
     return;
 }
 
-void merge(int ind1, int ind2, int stage){
-    // ind1 and ind2 are inclusive. We are going to read the runs stored in these files from ind1 to ind2 and merge them
+bool check(int n, vector<string> pointers, vector<string> lengths){
+    for(int i = 0; i<=n; i++)
+        if(pointers[i]!=lengths[i])
+            return true;
+    return false;
+}
 
-    // FILE* ptr;
-    // string s = "temp." + to_string(stage) + "." + to_string(num_runs);
-    // char* char_array = new char[s.length() + 1];
-    // strcpy(char_array, s.c_str());
-    // ptr = fopen(input, "r");
+void merge(int ind1, int ind2, int stage){
+
+    FILE * ptrs[ind2-ind1+1];
+    long bufferSize = Lb;
+
+    // ind1 and ind2 are inclusive. We are going to read the runs stored in these files from ind1 to ind2 and merge them
+    for(int i = ind1;i<=ind2;i++)
+    {
+        // FILE* ptr;
+        string s = "temp." + to_string(stage) + "." + to_string(i);
+        char* file_name = new char[s.length() + 1];
+        strcpy(file_name, s.c_str());
+        ptrs[i-ind1] = fopen(file_name, "r");
+    }
+    
+    vector<vector<string> > inputs;
+    char * buffer;
+    for(int i = 0;i<=ind2-ind1;i++)
+    {
+        vector<string> temp;
+        while(fgets(buffer, bufferSize, ptrs[i]) != NULL) 
+            temp.push_back(buffer);
+        inputs.push_back(temp);
+    }
+    vector<int> pointers, lengths;
+    for(int i = 0; i<=ind2-ind1; i++)
+    {
+        pointers.push_back(0);
+        lengths.push_back(inputs[i].size());
+    }
+
+    // Trie *root = new Trie();
+
+    priority_queue<pair<string, int> >pq;
+    int num_active = inputs.size();
+
+    // Initialising the pq - writing the first 'x' elements into the priority queue
+    for(int i = 0;i<num_active;i++)
+    {
+        pair<string, int> temp;
+        temp.first = inputs[i][0];
+        temp.second = i;
+        pq.push(temp);
+    }
+    // The main merge step
+
+    // need to fetch Lb bytes after each run that finishes
+    vector<string> out;
+    while(num_active>0)
+    {
+        int ind = pq.top().second;
+        out.push_back(pq.top().first);
+        pq.pop();
+        pointers[ind]+=1;
+        if(pointers[ind]<lengths[ind])
+        {
+            pair<string, int> temp;
+            temp.first = inputs[ind][pointers[ind]];
+            temp.second = ind;
+            pq.push(temp);
+        }
+        else
+            num_active-=1;
+
+
+        // need to change this
+        if(out.size()==L)
+        {
+            //write to file
+            out.clear();
+        } 
+    }
+        
+    
+
+    
 }
 
 int external_merge_sort_withstop ( const char* input , const char* output , const long key_count , const int k = 2 , const int num_merges = 0 ){
