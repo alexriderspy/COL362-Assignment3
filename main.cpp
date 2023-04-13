@@ -1,6 +1,6 @@
 #include<stdio.h>
 #include <stdlib.h>
-#include <cstring>
+// #include <cstring>
 #include <string>
 #include <cmath>
 #include <iostream>
@@ -15,8 +15,9 @@ const int MAX_CHAR = 256;
 //#define Mb (1<<30)
 #define M 10
 #define Mb 100
-#define L 10
-#define Lb 100
+#define L 10 //max blocks from one temp file in one merge step
+#define Lb 100  //max characters from one temp file in one merge step
+#define bufferSize 1024
 
 string sorted_arr[Mb];
 int sz;
@@ -96,89 +97,115 @@ void sort(vector<string> arr){
     return;
 }
 
-bool check(int n, vector<string> pointers, vector<string> lengths){
-    for(int i = 0; i<=n; i++)
-        if(pointers[i]!=lengths[i])
-            return true;
-    return false;
+int fetch(vector<string> *a, FILE * ptr, int start_ind)
+{
+    char * buffer;
+    int cnt = 0;
+    int ind = 0;
+    (*a).clear();
+    while(fgets(buffer, bufferSize, ptr) != NULL) 
+    {
+        if(ind>=start_ind)
+        {
+            cnt+=sizeof(*buffer)/sizeof(char)-1;
+            if(cnt<=Lb)
+                (*a).push_back(buffer);
+            else
+                break;      //ind will not be incremented, this string will be read again next time
+        }
+        ind++;
+    }
+    return ind; //the next start index
+}
+
+void push_pq(priority_queue<pair<string, int> > *pq, string st, int i)
+{
+    pair<string, int> temp;
+    temp.first = st;
+    temp.second = i;
+    (*pq).push(temp);
 }
 
 void merge(int ind1, int ind2, int stage){
 
-    FILE * ptrs[ind2-ind1+1];
-    long bufferSize = Lb;
-
     // ind1 and ind2 are inclusive. We are going to read the runs stored in these files from ind1 to ind2 and merge them
-    for(int i = ind1;i<=ind2;i++)
-    {
-        // FILE* ptr;
-        string s = "temp." + to_string(stage) + "." + to_string(i);
-        char* file_name = new char[s.length() + 1];
-        strcpy(file_name, s.c_str());
-        ptrs[i-ind1] = fopen(file_name, "r");
-    }
-    
+
+    FILE * ptrs[ind2-ind1+1];
     vector<vector<string> > inputs;
-    char * buffer;
+    vector<string> temp, output_buffer;
+    vector<int> pointers, lengths, indices;
+    priority_queue<pair<string, int> >pq;
+    
+
     for(int i = 0;i<=ind2-ind1;i++)
     {
-        vector<string> temp;
-        while(fgets(buffer, bufferSize, ptrs[i]) != NULL) 
-            temp.push_back(buffer);
+        string s = "temp." + to_string(stage) + "." + to_string(i+ind1);
+        char* file_name = new char[s.length() + 1];
+        strcpy(file_name, s.c_str());
+        ptrs[i] = fopen(file_name, "r");
+
+        //fetching the first Lb bytes from the temp file, and storing the last index accessed + 1
+        indices.push_back(fetch(&temp, ptrs[i], 0));           
         inputs.push_back(temp);
-    }
-    vector<int> pointers, lengths;
-    for(int i = 0; i<=ind2-ind1; i++)
-    {
         pointers.push_back(0);
         lengths.push_back(inputs[i].size());
+
+        // Initialising the pq - writing the first 'x' elements into the priority queue
+        push_pq(&pq, inputs[i][0], i);
     }
 
-    // Trie *root = new Trie();
-
-    priority_queue<pair<string, int> >pq;
     int num_active = inputs.size();
-
-    // Initialising the pq - writing the first 'x' elements into the priority queue
-    for(int i = 0;i<num_active;i++)
-    {
-        pair<string, int> temp;
-        temp.first = inputs[i][0];
-        temp.second = i;
-        pq.push(temp);
-    }
+        
     // The main merge step
 
     // need to fetch Lb bytes after each run that finishes
-    vector<string> out;
+    
+    //stop the loop when every character of every file has been read and merged
+    int char_cnt = 0;
     while(num_active>0)
     {
         int ind = pq.top().second;
-        out.push_back(pq.top().first);
-        pq.pop();
-        pointers[ind]+=1;
-        if(pointers[ind]<lengths[ind])
-        {
-            pair<string, int> temp;
-            temp.first = inputs[ind][pointers[ind]];
-            temp.second = ind;
-            pq.push(temp);
-        }
-        else
-            num_active-=1;
-
-
-        // need to change this
-        if(out.size()==L)
+        string to_write = pq.top().first;
+        if(char_cnt + to_write.length() > Lb)
         {
             //write to file
-            out.clear();
-        } 
-    }
+            output_buffer.clear();
+        }
+        output_buffer.push_back(to_write);
+        char_cnt+=to_write.length();
+        pq.pop();
+        pointers[ind]+=1;
         
-    
+        if(pointers[ind]<lengths[ind])
+            push_pq(&pq, inputs[ind][pointers[ind]], ind);
+        else
+        {
+            //fetch the next L characters from the file
+            int next_ind = fetch(&inputs[ind], ptrs[ind], indices[ind]);
 
+            //if file complete then reduce num_active files by 1
+            if(next_ind==indices[ind])
+                num_active-=1;
+        }
+    }
     
+}
+
+void write_to_file(string fname, vector<string> *content)
+{
+    FILE* ptr_new;
+    char* file_name = new char[fname.length() + 1];
+    strcpy(file_name, fname.c_str());
+    ptr_new = fopen(file_name, "w");
+    string fin = "";
+    for (int i=0;i<(*content).size();++i){
+        fin += (*content)[i];
+    }
+    char *a = new char[fin.size()];
+    strcpy(a, fin.c_str());
+    fputs(a, ptr_new);  
+    (*content).clear();
+
 }
 
 int external_merge_sort_withstop ( const char* input , const char* output , const long key_count , const int k = 2 , const int num_merges = 0 ){
@@ -186,7 +213,8 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     FILE* ptr;
     ptr = fopen(input, "r");
 
-    long bufferSize = Mb;
+    // long bufferSize = Mb;
+    
     //cout<<bufferSize<<'\n';
     char* buffer = new char[bufferSize];
     
@@ -208,9 +236,9 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     char* out;
     int cnt = 0;
     while(fgets(buffer, bufferSize, ptr) != NULL) {
-        cout<<buffer;
+        cout<<buffer<<endl;
 
-        int len = sizeof(buffer)/sizeof(char)-1;
+        int len = sizeof(*buffer)/sizeof(char)-1;
         if (cnt + len <= bufferSize){
             arr.push_back(buffer);
             cnt += len;
@@ -219,41 +247,30 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
         {
             sort(arr);
             cnt = 0;
-            FILE* ptr_new;
             string s = "temp.0." + to_string(num_runs);
-            char* char_array = new char[s.length() + 1];
-            strcpy(char_array, s.c_str());
-            ptr_new = fopen(char_array, "w");
-            string fin = "";
-            for (int i=0;i<arr.size();++i){
-                fin += sorted_arr[i];
-            }
-            char *a = new char[fin.size()];
-            strcpy(a, fin.c_str());
-            fputs(a, ptr_new);        
+            //sorting ka dekh le tu
+            write_to_file(s, &arr);
             num_runs++;
-
-            arr.clear();
             arr.push_back(buffer);
         }
     }
-
     if (arr.size()!=0){
-        FILE* ptr_new;
         string s = "temp.0." + to_string(num_runs);
-        char* char_array = new char[s.length() + 1];
-        strcpy(char_array, s.c_str());
-        ptr_new = fopen(char_array, "w");
-        string fin = "";
-        for (int i=0;i<arr.size();++i){
-            fin += sorted_arr[i];
-        }
-        char *a = new char[fin.size()+1];
-        strcpy(a, fin.c_str());
-        fputs(a, ptr_new);        
+        write_to_file(s, &arr);
+        // FILE* ptr_new;
+        // char* file_name = new char[s.length() + 1];
+        // strcpy(file_name, s.c_str());
+        // ptr_new = fopen(file_name, "w");
+        // string fin = "";
+        // for (int i=0;i<arr.size();++i){
+        //     fin += sorted_arr[i];
+        // }
+        // char *a = new char[fin.size()+1];
+        // strcpy(a, fin.c_str());
+        // fputs(a, ptr_new);        
         num_runs++;
-    
     }
+
     //Step 2. Merge the sorted runs.
     int temp = ceil(num_runs/(M-1));
     for(int i = 0;i<temp;i++)
@@ -269,10 +286,10 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
 int main(){
     string s = "random1.list";
     string out = "out.txt";
-    char* char_array = new char[s.length() + 1];
-    char* char_array2 = new char[out.length() + 1];
-    strcpy(char_array, s.c_str());
-    strcpy(char_array2, out.c_str());
-    external_merge_sort_withstop(char_array, char_array2, 3, 2, 0);
+    char* file_name = new char[s.length() + 1];
+    char* file_name2 = new char[out.length() + 1];
+    strcpy(file_name, s.c_str());
+    strcpy(file_name2, out.c_str());
+    external_merge_sort_withstop(file_name, file_name2, 3, 2, 0);
     return 0;
 }
