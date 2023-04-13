@@ -18,6 +18,7 @@ const int MAX_CHAR = 256;
 #define L 10 //max blocks from one temp file in one merge step
 #define Lb 100  //max characters from one temp file in one merge step
 #define bufferSize 1024
+#define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
 
 string sorted_arr[Mb];
 int sz;
@@ -118,7 +119,7 @@ int fetch(vector<string> *a, FILE * ptr, int start_ind)
     return ind; //the next start index
 }
 
-void push_pq(priority_queue<pair<string, int> > *pq, string st, int i)
+void push_pq(pq_type *pq, string st, int i)
 {
     pair<string, int> temp;
     temp.first = st;
@@ -150,7 +151,7 @@ void merge(int ind1, int ind2, int stage){
     vector<vector<string> > inputs;
     vector<string> temp, output_buffer;
     vector<int> pointers, lengths, indices;
-    priority_queue<pair<string, int> >pq;
+    pq_type pq;
     
     for(int i = 0;i<=ind2-ind1;i++)
     {
@@ -181,6 +182,7 @@ void merge(int ind1, int ind2, int stage){
     {
         int ind = pq.top().second;
         string to_write = pq.top().first;
+        cout<<to_write<<" "<<to_write.length()<<endl;
         cout<<char_cnt + to_write.length()<<endl;
         if(char_cnt + to_write.length() > Lb)
         {
