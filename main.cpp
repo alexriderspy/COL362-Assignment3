@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include<vector>
+#include <map>
 #include <queue>
 
 using namespace std;
@@ -21,6 +22,7 @@ const int MAX_CHAR = 256;
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
 
 string sorted_arr[Mb];
+vector<int> return_type;
 int sz;
 
 struct Trie {
@@ -98,29 +100,34 @@ void sort(vector<string> arr){
     return;
 }
 
-int fetch(vector<string> *a, FILE * ptr, int start_ind)
+int fetch(vector<string> *a, FILE * ptr, int start_ind, int i)
 {
     char * buffer;
     int cnt = 0;
     int ind = 0;
+    int flag = 0;
     (*a).clear();
-    rewind(ptr);
     while(fgets(buffer, bufferSize, ptr) != NULL) 
     {
-        cout<<"here"<<endl;
         if(ind>=start_ind)
         {
             cnt+=sizeof(buffer)/sizeof(char)-1;
             if(cnt<=Lb)
                 (*a).push_back(buffer);
             else
+            {
+                flag = 1;
                 break;      //ind will not be incremented, this string will be read again next time
+            }
         }
         ind++;
     }
-    cout<<"null"<<endl;
     fclose(ptr);
-    cout<<start_ind<<" "<<ind<<endl;
+    if(flag==0)
+    {
+        return_type.push_back(i);
+    }
+
     return ind; //the next start index
 }
 
@@ -155,6 +162,7 @@ void merge(int ind1, int ind2, int stage, int num){
 
     // ind1 and ind2 are inclusive. We are going to read the runs stored in these files from ind1 to ind2 and merge them
 
+    return_type.clear();
     FILE * ptrs[ind2-ind1+1];
     vector<vector<string> > inputs;
     vector<string> temp, output_buffer;
@@ -169,15 +177,14 @@ void merge(int ind1, int ind2, int stage, int num){
         strcpy(file_name, s.c_str());
         ptrs[i] = fopen(file_name, "r");
         //fetching the first Lb bytes from the temp file, and storing the last index accessed + 1
-        indices.push_back(fetch(&temp, ptrs[i], 0));     
+        indices.push_back(fetch(&temp, ptrs[i], 0, i));   
+        // fclose(ptrs[i]);
         inputs.push_back(temp);
         pointers.push_back(0);
         lengths.push_back(inputs[i].size());
         // Initialising the pq - writing the first 'x' elements into the priority queue
         push_pq(&pq, inputs[i][0], i);
     }
-    
-    cout<<"starting merge "<<stage<<" "<<num<<endl;
     int num_active = inputs.size();
         
     // The main merge step
@@ -213,20 +220,27 @@ void merge(int ind1, int ind2, int stage, int num){
         else
         {
             //fetch the next L characters from the file
-            cout<<"fetching "<<ind<<endl;
-            int next_ind = fetch(&(inputs[ind]), ptrs[ind], indices[ind]);
-            cout<<"after"<<endl;
-            pointers[ind] = 0;
-            lengths[ind] = inputs[ind].size();
             //if file complete then reduce num_active files by 1
-            if(next_ind==0)
+            if(find(return_type.begin(), return_type.end(), ind) != return_type.end())
+            {
                 num_active-=1;
-            indices[ind] = next_ind;
+            }   
+            else
+            {
+                string s = "temp." + to_string(stage-1) + "." + to_string(ind+ind1+1);
+                char* file_name = new char[s.length() + 1];
+                strcpy(file_name, s.c_str());
+                ptrs[ind] = fopen(file_name, "r");
+                int next_ind = fetch(&(inputs[ind]), ptrs[ind], indices[ind], ind);
+                pointers[ind] = 0;
+                lengths[ind] = inputs[ind].size();
+                indices[ind] = next_ind;
+                push_pq(&pq, inputs[ind][pointers[ind]], ind);
+            }
         }
 
         if(pq.size()==0)
         {
-            cout<<"here"<<endl;
             string fname = "temp." + to_string(stage) + "." + to_string(num);
             int n = output_buffer.size();
             string output_strings[n];
@@ -282,7 +296,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     if (arr.size()!=0)
         num_runs = sort_and_store(&arr, num_runs);
 
-    
+    fclose(ptr);
 
     //Step 2. Merge the sorted runs.
     num_runs--;
@@ -304,7 +318,6 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
             cnt++;
         }
         num_runs = cnt;
-        cout<<num_runs<<endl;
         stage++;
     }
     return 0;
