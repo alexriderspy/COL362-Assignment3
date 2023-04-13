@@ -104,8 +104,10 @@ int fetch(vector<string> *a, FILE * ptr, int start_ind)
     int cnt = 0;
     int ind = 0;
     (*a).clear();
+    rewind(ptr);
     while(fgets(buffer, bufferSize, ptr) != NULL) 
     {
+        cout<<"here"<<endl;
         if(ind>=start_ind)
         {
             cnt+=sizeof(buffer)/sizeof(char)-1;
@@ -116,6 +118,9 @@ int fetch(vector<string> *a, FILE * ptr, int start_ind)
         }
         ind++;
     }
+    cout<<"null"<<endl;
+    fclose(ptr);
+    cout<<start_ind<<" "<<ind<<endl;
     return ind; //the next start index
 }
 
@@ -172,7 +177,7 @@ void merge(int ind1, int ind2, int stage, int num){
         push_pq(&pq, inputs[i][0], i);
     }
     
-    cout<<"starting merge"<<endl;
+    cout<<"starting merge "<<stage<<" "<<num<<endl;
     int num_active = inputs.size();
         
     // The main merge step
@@ -183,13 +188,12 @@ void merge(int ind1, int ind2, int stage, int num){
     int char_cnt = 0;
     while(num_active>0)
     {
-        cout<<pq.size()<<endl;
         int ind = pq.top().second;
         string to_write = pq.top().first;
         if(char_cnt + to_write.length() > Lb)
         {
             //write to file
-            string fname = "temp.1." + to_string(num);
+            string fname = "temp." + to_string(stage) + "." + to_string(num);
             int n = output_buffer.size();
             string output_strings[n];
             for(int i = 0;i<n;i++)
@@ -209,23 +213,26 @@ void merge(int ind1, int ind2, int stage, int num){
         else
         {
             //fetch the next L characters from the file
-            int next_ind = fetch(&inputs[ind], ptrs[ind], indices[ind]);
+            cout<<"fetching "<<ind<<endl;
+            int next_ind = fetch(&(inputs[ind]), ptrs[ind], indices[ind]);
+            cout<<"after"<<endl;
+            pointers[ind] = 0;
+            lengths[ind] = inputs[ind].size();
             //if file complete then reduce num_active files by 1
-            if(next_ind==indices[ind])
+            if(next_ind==0)
                 num_active-=1;
+            indices[ind] = next_ind;
         }
 
         if(pq.size()==0)
         {
-            string fname = "temp.1." + to_string(num);
+            cout<<"here"<<endl;
+            string fname = "temp." + to_string(stage) + "." + to_string(num);
             int n = output_buffer.size();
             string output_strings[n];
             for(int i = 0;i<n;i++)
                 output_strings[i] = output_buffer[i];
             write_to_file(fname, output_strings, n, mode);
-            mode = 1;
-            output_buffer.clear();
-            char_cnt=0;
             break;
         }
     }
@@ -280,20 +287,26 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     //Step 2. Merge the sorted runs.
     num_runs--;
     stage = 1;
+    
 
     while(num_runs>1)
     {
-        int temp = ceil((num_runs)*1.0/(M-1));
-        for(int i = 0;i<temp;i++)
+        // int temp = ceil((num_runs)*1.0/(M-1));
+        int ind1 = 0;
+        int ind2 = -1;
+        int cnt = 0;
+        while(ind2<num_runs-1)
         {
-            int ind1 = i*(M-1);
-            int ind2 = min((i+1)*(M-1), num_runs) - 1;
-            merge(ind1, ind2, stage, i+1);
+            
+            ind1 = ind2+1;
+            ind2 = min(ind1 + min(M-1, k), num_runs) - 1;
+            merge(ind1, ind2, stage, cnt+1);
+            cnt++;
         }
-        num_runs = temp;
+        num_runs = cnt;
+        cout<<num_runs<<endl;
         stage++;
     }
-
     return 0;
 }
 
