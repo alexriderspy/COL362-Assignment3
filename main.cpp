@@ -102,26 +102,19 @@ int fetch(vector<string> *a, FILE * ptr, int start_ind)
     char * buffer;
     int cnt = 0;
     int ind = 0;
-    vector<string> temp;
-    cout<<ptr<<endl;
+    (*a).clear();
     while(fgets(buffer, bufferSize, ptr) != NULL) 
     {
-        cout<<"hello"<<endl;
-        cout<<buffer<<endl;
         if(ind>=start_ind)
         {
             cnt+=sizeof(buffer)/sizeof(char)-1;
             if(cnt<=Lb)
-                temp.push_back(buffer);
+                (*a).push_back(buffer);
             else
                 break;      //ind will not be incremented, this string will be read again next time
         }
         ind++;
     }
-    cout<<"null"<<endl;
-    cout<<temp.size()<<endl;
-    cout<<temp[0]<<endl;
-    a = &temp;
     return ind; //the next start index
 }
 
@@ -146,6 +139,7 @@ void write_to_file(string fname, string *content, int n)
     char *a = new char[fin.size()+1];
     strcpy(a, fin.c_str());
     fputs(a, ptr_new);
+    fclose(ptr_new);
 }
 
 void merge(int ind1, int ind2, int stage){
@@ -161,30 +155,19 @@ void merge(int ind1, int ind2, int stage){
     for(int i = 0;i<=ind2-ind1;i++)
     {
         string s = "temp." + to_string(stage-1) + "." + to_string(i+ind1+1);
-        cout<<s<<endl;
         char* file_name = new char[s.length() + 1];
         strcpy(file_name, s.c_str());
         ptrs[i] = fopen(file_name, "r");
-        cout<<file_name<<endl;
-        cout<<ptrs[i]<<endl;
-        char * test;
-        fgets(test, bufferSize, ptrs[i]);
-        cout<<test<<endl;
         //fetching the first Lb bytes from the temp file, and storing the last index accessed + 1
-        indices.push_back(fetch(&temp, ptrs[i], 0));  
-        cout<<temp[0]<<endl;         
+        indices.push_back(fetch(&temp, ptrs[i], 0));     
         inputs.push_back(temp);
         pointers.push_back(0);
         lengths.push_back(inputs[i].size());
-        cout<<"hello"<<endl;
-
         // Initialising the pq - writing the first 'x' elements into the priority queue
-        cout<<inputs[i][0]<<endl;
         push_pq(&pq, inputs[i][0], i);
-        cout<<"hello2"<<endl;
     }
     
-
+    cout<<"starting merge"<<endl;
     int num_active = inputs.size();
         
     // The main merge step
@@ -198,6 +181,7 @@ void merge(int ind1, int ind2, int stage){
     {
         int ind = pq.top().second;
         string to_write = pq.top().first;
+        cout<<char_cnt + to_write.length()<<endl;
         if(char_cnt + to_write.length() > Lb)
         {
             //write to file
@@ -209,6 +193,7 @@ void merge(int ind1, int ind2, int stage){
                 output_strings[i] = output_buffer[i];
             write_to_file(fname, output_strings, n);
             output_buffer.clear();
+            char_cnt=0;
         }
         output_buffer.push_back(to_write);
         char_cnt+=to_write.length();
@@ -273,16 +258,18 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     if (arr.size()!=0)
         num_runs = sort_and_store(&arr, num_runs);
 
-    fclose(ptr);
+    
 
     //Step 2. Merge the sorted runs.
+    num_runs--;
     stage = 1;
-    int temp = ceil(num_runs*1.0/(M-1));
+    int temp = ceil((num_runs)*1.0/(M-1));
     for(int i = 0;i<temp;i++)
     {
         int ind1 = i*(M-1);
         int ind2 = min((i+1)*(M-1), num_runs) - 1;
-        // merge(ind1, ind2, stage);
+        cout<<"entering"<<endl;
+        merge(ind1, ind2, stage);
     }
     return 0;
 }
