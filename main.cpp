@@ -191,36 +191,39 @@ void merge(int ind1, int ind2, int stage){
     
 }
 
-void write_to_file(string fname, vector<string> *content)
+void write_to_file(string fname, string *content, int n)
 {
     FILE* ptr_new;
     char* file_name = new char[fname.length() + 1];
     strcpy(file_name, fname.c_str());
     ptr_new = fopen(file_name, "w");
     string fin = "";
-    for (int i=0;i<(*content).size();++i){
-        fin += (*content)[i];
+    for (int i=0;i<n;++i){
+        fin += content[i];
     }
-    char *a = new char[fin.size()];
+    char *a = new char[fin.size()+1];
     strcpy(a, fin.c_str());
-    fputs(a, ptr_new);  
-    (*content).clear();
+    fputs(a, ptr_new);
+}
 
+int sort_and_store(vector<string> *arr, int num_runs)
+{
+    sort(*arr);
+    string s = "temp.0." + to_string(num_runs);
+    write_to_file(s, sorted_arr, (*arr).size());
+    (*arr).clear();   
+    return num_runs+1;
 }
 
 int external_merge_sort_withstop ( const char* input , const char* output , const long key_count , const int k = 2 , const int num_merges = 0 ){
 
     FILE* ptr;
     ptr = fopen(input, "r");
-
-    // long bufferSize = Mb;
-    
-    //cout<<bufferSize<<'\n';
     char* buffer = new char[bufferSize];
-    
-    //while stage
-    int stage = 0;
+    int stage, cnt = 0;
     int num_runs = 1;
+    vector<string>arr;
+    char* out;
 
     // int stop = 0;
     // if (bufferSize < key_count) {
@@ -232,50 +235,25 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     // }
 
     //Step 1. Make and store sorted runs
-    vector<string>arr;
-    char* out;
-    int cnt = 0;
-    while(fgets(buffer, bufferSize, ptr) != NULL) {
-        cout<<buffer<<endl;
-
-        int len = sizeof(*buffer)/sizeof(char)-1;
-        if (cnt + len <= bufferSize){
-            arr.push_back(buffer);
-            cnt += len;
-        }
-        else
+    while(fgets(buffer, bufferSize, ptr) != NULL) 
+    {
+        //cnt stores the the sum of lenghs SUPPOSING the new string is added to the list
+        cnt += sizeof(buffer)/sizeof(char)-1;   
+        if (cnt > Mb)
         {
-            sort(arr);
             cnt = 0;
-            string s = "temp.0." + to_string(num_runs);
-            //sorting ka dekh le tu
-            write_to_file(s, &arr);
-            num_runs++;
-            arr.push_back(buffer);
+            num_runs = sort_and_store(&arr, num_runs);
         }
+        arr.push_back(buffer);
     }
-    if (arr.size()!=0){
-        string s = "temp.0." + to_string(num_runs);
-        write_to_file(s, &arr);
-        // FILE* ptr_new;
-        // char* file_name = new char[s.length() + 1];
-        // strcpy(file_name, s.c_str());
-        // ptr_new = fopen(file_name, "w");
-        // string fin = "";
-        // for (int i=0;i<arr.size();++i){
-        //     fin += sorted_arr[i];
-        // }
-        // char *a = new char[fin.size()+1];
-        // strcpy(a, fin.c_str());
-        // fputs(a, ptr_new);        
-        num_runs++;
-    }
+    if (arr.size()!=0)
+        num_runs = sort_and_store(&arr, num_runs);
 
     //Step 2. Merge the sorted runs.
     int temp = ceil(num_runs/(M-1));
     for(int i = 0;i<temp;i++)
     {
-
+        
     }
 
     fclose(ptr);
