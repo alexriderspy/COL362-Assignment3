@@ -8,15 +8,18 @@
 #include <map>
 #include <queue>
 #include <algorithm>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 
 using namespace std;
 
 const int MAX_CHAR = 256;
 
 #define M 10
-#define Mb (1<<13)
+#define Mb (1<<30)
 
-#define bufferSize 1050
+#define bufferSize 1025
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
 
 int Lb;
@@ -101,40 +104,38 @@ void sort(vector<string>&arr){
     return;
 }
 
-int fetch(vector<string> &a,int start_ind, int i, string fname)
+int fetch(vector<string> &a,int start_cnt, int i, string fname)
 {
     char * buffer = new char[bufferSize];
     int cnt = 0;
-    int ind = 0;
+    int ind_cnt = 0;
     int flag = 0;
-    (a).clear();
-    char* file_name = new char[fname.length() + 1];
-    strcpy(file_name, fname.c_str());
-    FILE* ptr =  fopen(file_name, "r");
+    a.clear();
+
+    fstream myFile(fname, ios::in);
+    myFile.seekg(start_cnt, ios::beg);
 
     //fseek
-    while(fgets(buffer, bufferSize, ptr) != NULL) 
+    string s1;
+    while(myFile) 
     {
-        if(ind>=start_ind)
+        getline(myFile, s1);
+        cnt += s1.length();
+        if(cnt<=Lb)
+            (a).push_back(s1);
+        else
         {
-            string s1(buffer);
-            cnt += s1.length();
-            if(cnt<=Lb)
-                (a).push_back(s1);
-            else
-            {
-                flag = 1;
-                break;      //ind will not be incremented, this string will be read again next time
-            }
+            flag = 1;
+            break;      //ind will not be incremented, this string will be read again next time
         }
-        ind++;
+        ind_cnt=cnt;
     }
-    fclose(ptr);
+    myFile.close();
     if(flag==0)
     {
         return_type.push_back(i);
     }
-    return ind; //the next start index
+    return ind_cnt; //the next start index
 }
 
 void push_pq(pq_type &pq, string st, int i)
@@ -164,7 +165,7 @@ void write_to_file(string fname, vector<string>&content, int mode)
     fclose(ptr_new);
 }
 
-void merge(int ind1, int ind2, int stage, int num){
+void merge(int ind1, int ind2, int stage, int num, const char* output , int wr){
 
     // ind1 and ind2 are inclusive. We are going to read the runs stored in these files from ind1 to ind2 and merge them
 
@@ -213,6 +214,8 @@ void merge(int ind1, int ind2, int stage, int num){
         {
             //write to file
             string fname = "temp." + to_string(stage) + "." + to_string(num);
+            if(wr==1)
+                fname = string(output);
             int n = output_buffer.size();
             write_to_file(fname, output_buffer, mode);
             mode = 1;
@@ -251,6 +254,8 @@ void merge(int ind1, int ind2, int stage, int num){
         if(pq.size()==0)
         {
             string fname = "temp." + to_string(stage) + "." + to_string(num);
+            if(wr==1)
+                fname = string(output);
             int n = output_buffer.size();
             write_to_file(fname, output_buffer, mode);
             break;
@@ -261,9 +266,9 @@ void merge(int ind1, int ind2, int stage, int num){
 
 int sort_and_store(vector<string> &arr, int num_runs)
 {
-    cout<<"before2\n";
+    // cout<<"before2\n";
     sort(arr.begin(), arr.end());
-    cout<<"after1\n";
+    // cout<<"after1\n";
     string fname = "temp.0." + to_string(num_runs);
     write_to_file(fname, arr, 0);
     (arr).clear();   
@@ -290,7 +295,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
         if (cnt > Mb)
         {
             cnt = 0;
-            cout<<"before\n";
+            // cout<<"before\n";
             num_runs = sort_and_store(arr, num_runs);
         }
         arr.push_back(buffer);
@@ -304,34 +309,47 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     //Step 2. Merge the sorted runs.
     num_runs--;
     stage = 1;
-    
+    if(num_runs==1)
+    {
+        ifstream  src("temp.0.1", std::ios::binary);
+        ofstream  dst(string(output),   std::ios::binary);
+        dst << src.rdbuf();
+    }
     while(num_runs>1)
     {
-        // int temp = ceil((num_runs)*1.0/(M-1));
         int ind1 = 0;
         int ind2 = -1;
         int cnt = 0;
+        int wr = 0;
         while(ind2<num_runs-1)
         {
             ind1 = ind2+1;
             ind2 = min(ind1 + k, num_runs) - 1;
-            merge(ind1, ind2, stage, cnt+1);
+            if(ind2>=num_runs-1 && cnt==0)
+                wr = 1;
+            merge(ind1, ind2, stage, cnt+1, output, wr);
             cnt++;
         }
         num_runs = cnt;
         stage++;
     }
+
+
     return 0;
 }
 
 
 int main(){
-    string s = "english-subset.txt";
+    auto start = chrono::steady_clock::now();
+    string s = "random.txt";
     string out = "out.txt";
     char* file_name = new char[s.length() + 1];
     char* file_name2 = new char[out.length() + 1];
     strcpy(file_name, s.c_str());
     strcpy(file_name2, out.c_str());
     external_merge_sort_withstop(file_name, file_name2, 3, 2, 0);
+    auto end = chrono::steady_clock::now();
+
+    cout << "Elapsed time in seconds: "<< chrono::duration_cast<chrono::seconds>(end - start).count()<< " sec";    
     return 0;
 }
