@@ -100,13 +100,16 @@ void sort(vector<string> arr){
     return;
 }
 
-int fetch(vector<string> *a, FILE * ptr, int start_ind, int i)
+int fetch(vector<string> *a, FILE * ptr, int start_ind, int i, string fname)
 {
     char * buffer;
     int cnt = 0;
     int ind = 0;
     int flag = 0;
     (*a).clear();
+    char* file_name = new char[fname.length() + 1];
+    strcpy(file_name, fname.c_str());
+    // ptr = fopen(file_name, "r");
     while(fgets(buffer, bufferSize, ptr) != NULL) 
     {
         if(ind>=start_ind)
@@ -167,17 +170,19 @@ void merge(int ind1, int ind2, int stage, int num){
     vector<vector<string> > inputs;
     vector<string> temp, output_buffer;
     vector<int> pointers, lengths, indices;
+    vector<string> filenames;
     pq_type pq;
     int mode = 0;
     
     for(int i = 0;i<=ind2-ind1;i++)
     {
         string s = "temp." + to_string(stage-1) + "." + to_string(i+ind1+1);
+        filenames.push_back(s);
         char* file_name = new char[s.length() + 1];
         strcpy(file_name, s.c_str());
         ptrs[i] = fopen(file_name, "r");
         //fetching the first Lb bytes from the temp file, and storing the last index accessed + 1
-        indices.push_back(fetch(&temp, ptrs[i], 0, i));   
+        indices.push_back(fetch(&temp, ptrs[i], 0, i, s));   
         // fclose(ptrs[i]);
         inputs.push_back(temp);
         pointers.push_back(0);
@@ -231,7 +236,7 @@ void merge(int ind1, int ind2, int stage, int num){
                 char* file_name = new char[s.length() + 1];
                 strcpy(file_name, s.c_str());
                 ptrs[ind] = fopen(file_name, "r");
-                int next_ind = fetch(&(inputs[ind]), ptrs[ind], indices[ind], ind);
+                int next_ind = fetch(&(inputs[ind]), ptrs[ind], indices[ind], ind, filenames[ind]);
                 pointers[ind] = 0;
                 lengths[ind] = inputs[ind].size();
                 indices[ind] = next_ind;
