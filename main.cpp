@@ -16,8 +16,7 @@ using namespace std;
 
 const int MAX_CHAR = 256;
 
-#define M 10
-#define Mb (1 << 7)
+#define Mb (1 << 30)
 
 #define bufferSize 1025
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int>>, greater<pair<string, int>>>
@@ -209,10 +208,6 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
         // cnt stores the the sum of lenghs SUPPOSING the new string is added to the list
         getline(myFile, s1);
         //cout<<s1<<'\n';
-        // if (eof == 0 && s1.length() == 0){
-        //     eof = 1;
-        //     continue;
-        // }
 
         if(myFile.eof()){
             break;
@@ -272,7 +267,7 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
 
 int main()
 {   
-    string s = "random1.list";
+    string s = "random.list";
     string out = "out.txt";
     char *file_name = new char[s.length() + 1];
     char *file_name2 = new char[out.length() + 1];
@@ -282,6 +277,6 @@ int main()
     external_merge_sort_withstop(file_name, file_name2, 1000000000, 2, 0);
     auto end = chrono::steady_clock::now();
 
-    cout << "Elapsed time in seconds: " << chrono::duration_cast<chrono::seconds>(end - start).count() << " sec";
+    cout << "Elapsed time in milliseconds: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " millisec";
     return 0;
 }
