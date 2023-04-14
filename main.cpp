@@ -37,10 +37,16 @@ int fetch(vector<string> &a, int start_cnt, int i, string fname)
 
     // fseek
     string s1;
+    int eof = 0;
     while (myFile)
     {
         getline(myFile, s1);
         //cout<<s1<<'\n';
+        if (eof == 0 && s1.length() == 0){
+            eof = 1;
+            continue;
+        }
+        
         cnt += s1.length()+1;
         if (cnt <= Lb)
             (a).push_back(s1+'\n');
@@ -118,7 +124,7 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
     {
         int ind = pq.top().second;
         string to_write = pq.top().first;
-        if (char_cnt + to_write.length()+1 > Lb)
+        if (char_cnt + to_write.length() > Lb)
         {
             // write to file
             string fname = "temp." + to_string(stage) + "." + to_string(num);
@@ -131,7 +137,7 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
             char_cnt = 0;
         }
         output_buffer.push_back(to_write);
-        char_cnt += to_write.length()+1;
+        char_cnt += to_write.length();
         pq.pop();
         pointers[ind] += 1;
 
@@ -184,6 +190,7 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
 {
     fstream myFile(input, ios::in);
     
+    int eof = 0;
     string s1;
     int stage, cnt = 0;
     int num_runs = 1;
@@ -198,6 +205,10 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
         // cnt stores the the sum of lenghs SUPPOSING the new string is added to the list
         getline(myFile, s1);
         //cout<<s1<<'\n';
+        if (eof == 0 && s1.length() == 0){
+            eof = 1;
+            continue;
+        }
         cnt += s1.length()+1;
         if (cnt > Mb)
         {
@@ -209,7 +220,7 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
         if(total_keys == key_count)
             break;
     }
-    cout<<"end\n";
+    //cout<<"end\n";
     if (arr.size() != 0)
         num_runs = sort_and_store(arr, num_runs);
 
