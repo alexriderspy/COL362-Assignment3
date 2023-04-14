@@ -17,7 +17,7 @@ using namespace std;
 const int MAX_CHAR = 256;
 
 #define M 10
-#define Mb (1 << 30)
+#define Mb (1 << 7)
 
 #define bufferSize 1025
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int>>, greater<pair<string, int>>>
@@ -27,7 +27,6 @@ vector<int> return_type;
 
 int fetch(vector<string> &a, int start_cnt, int i, string fname)
 {
-    char *buffer = new char[bufferSize];
     int cnt = 0;
     int ind_cnt = 0;
     int flag = 0;
@@ -41,9 +40,10 @@ int fetch(vector<string> &a, int start_cnt, int i, string fname)
     while (myFile)
     {
         getline(myFile, s1);
-        cnt += s1.length();
+        //cout<<s1<<'\n';
+        cnt += s1.length()+1;
         if (cnt <= Lb)
-            (a).push_back(s1);
+            (a).push_back(s1+'\n');
         else
         {
             flag = 1;
@@ -51,23 +51,16 @@ int fetch(vector<string> &a, int start_cnt, int i, string fname)
         }
         ind_cnt = cnt;
     }
+    cout<<"end\n";
     myFile.close();
     if (flag == 0)
     {
         return_type.push_back(i);
     }
-    return ind_cnt; // the next start index
+    return ind_cnt+start_cnt; // the next start index
 }
 
-void push_pq(pq_type &pq, string st, int i)
-{
-    pair<string, int> temp;
-    temp.first = st;
-    temp.second = i;
-    pq.push(temp);
-}
-
-void write_to_file(string fname, vector<string> &content, int mode)
+void write_to_file(string fname, vector<string> &content, int mode, int choice)
 {
     fstream myFile;
     if (mode == 1){
@@ -79,6 +72,7 @@ void write_to_file(string fname, vector<string> &content, int mode)
     string fin = "";
     for (int i = 0; i < content.size(); ++i)
     {
+        //content[i] = content[i]+'\n';
         fin += content[i];
     }
 
@@ -89,7 +83,6 @@ void write_to_file(string fname, vector<string> &content, int mode)
 void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
 {
     // ind1 and ind2 are inclusive. We are going to read the runs stored in these files from ind1 to ind2 and merge them
-
     return_type.clear();
     vector<vector<string>> inputs;
     vector<string> temp, output_buffer;
@@ -111,7 +104,7 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
         lengths.push_back(inputs[i].size());
 
         // Initialising the pq - writing the first 'x' elements into the priority queue
-        push_pq(pq, inputs[i][0], i);
+        pq.push({inputs[i][0],i});
     }
     int num_active = inputs.size();
 
@@ -125,42 +118,44 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
     {
         int ind = pq.top().second;
         string to_write = pq.top().first;
-        if (char_cnt + to_write.length() > Lb)
+        if (char_cnt + to_write.length()+1 > Lb)
         {
             // write to file
             string fname = "temp." + to_string(stage) + "." + to_string(num);
             if (wr == 1)
                 fname = string(output);
             int n = output_buffer.size();
-            write_to_file(fname, output_buffer, mode);
+            write_to_file(fname, output_buffer, mode, 1);
             mode = 1;
             output_buffer.clear();
             char_cnt = 0;
         }
         output_buffer.push_back(to_write);
-        char_cnt += to_write.length();
+        char_cnt += to_write.length()+1;
         pq.pop();
         pointers[ind] += 1;
 
         if (pointers[ind] < lengths[ind])
-            push_pq(pq, inputs[ind][pointers[ind]], ind);
+            pq.push({inputs[ind][pointers[ind]], ind});
         else
         {
             // fetch the next L characters from the file
             // if file complete then reduce num_active files by 1
             if (find(return_type.begin(), return_type.end(), ind) != return_type.end())
             {
+                //cout<<"eof"<<endl;
                 num_active -= 1;
             }
             else
             {
                 string s = "temp." + to_string(stage - 1) + "." + to_string(ind + ind1 + 1);
-                
+                // cout<<indices[ind]<<endl;
                 int next_ind = fetch((inputs[ind]), indices[ind], ind, filenames[ind]);
                 pointers[ind] = 0;
                 lengths[ind] = inputs[ind].size();
                 indices[ind] = next_ind;
-                push_pq(pq, inputs[ind][pointers[ind]], ind);
+                // cout<<inputs[ind][pointers[ind]]<<endl;
+                pq.push({inputs[ind][pointers[ind]], ind});
             }
         }
 
@@ -170,7 +165,7 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
             if (wr == 1)
                 fname = string(output);
             int n = output_buffer.size();
-            write_to_file(fname, output_buffer, mode);
+            write_to_file(fname, output_buffer, mode, 1);
             break;
         }
     }
@@ -180,16 +175,16 @@ int sort_and_store(vector<string> &arr, int num_runs)
 {
     sort(arr.begin(),arr.end());
     string fname = "temp.0." + to_string(num_runs);
-    write_to_file(fname, arr, 0);
+    write_to_file(fname, arr, 0, 0);
     arr.clear();
     return num_runs + 1;
 }
 
 int external_merge_sort_withstop(const char *input, const char *output, const long key_count, const int k = 2, const int num_merges = 0)
 {
-    FILE *ptr;
-    ptr = fopen(input, "r");
-    char *buffer = new char[bufferSize];
+    fstream myFile(input, ios::in);
+    
+    string s1;
     int stage, cnt = 0;
     int num_runs = 1;
     vector<string> arr;
@@ -198,25 +193,25 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
     Lb = Mb / (k + 1);
     int total_keys=0;
     // Step 1. Make and store sorted runs
-    while (fgets(buffer, bufferSize, ptr) != NULL)
+    while (myFile)
     {
         // cnt stores the the sum of lenghs SUPPOSING the new string is added to the list
-        string s1(buffer);
-        cnt += s1.length();
+        getline(myFile, s1);
+        //cout<<s1<<'\n';
+        cnt += s1.length()+1;
         if (cnt > Mb)
         {
             cnt = 0;
             num_runs = sort_and_store(arr, num_runs);
         }
-        arr.push_back(buffer);
+        arr.push_back(s1+'\n');
         total_keys++;
         if(total_keys == key_count)
             break;
     }
+    cout<<"end\n";
     if (arr.size() != 0)
         num_runs = sort_and_store(arr, num_runs);
-
-    fclose(ptr);
 
     int total_runs = num_runs;
     // Step 2. Merge the sorted runs.
