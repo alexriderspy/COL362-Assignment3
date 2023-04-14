@@ -13,15 +13,13 @@ using namespace std;
 
 const int MAX_CHAR = 256;
 
-//#define M (1<<21)
-//#define Mb (1<<30)
 #define M 10
-#define Mb 100
-#define L 10 //max blocks from one temp file in one merge step
-#define Lb 100  //max characters from one temp file in one merge step
+#define Mb (1<<29)
+
 #define bufferSize 1024
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
 
+int Lb;
 vector<string>sorted_arr;
 vector<int> return_type;
 int sz;
@@ -118,7 +116,6 @@ int fetch(vector<string> &a,int start_ind, int i, string fname)
     {
         if(ind>=start_ind)
         {
-
             string s1(buffer);
             cnt += s1.length();
             if(cnt<=Lb)
@@ -136,7 +133,6 @@ int fetch(vector<string> &a,int start_ind, int i, string fname)
     {
         return_type.push_back(i);
     }
-    cout<<"heloo\n";
     return ind; //the next start index
 }
 
@@ -287,6 +283,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     vector<string>arr;
     char* out;
 
+    Lb = Mb/(k+1);
     //Step 1. Make and store sorted runs
     while(fgets(buffer, bufferSize, ptr) != NULL) 
     {
@@ -306,7 +303,6 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
     fclose(ptr);
 
     int total_runs = num_runs;
-    //cout<<total_runs<<'\n';
     //Step 2. Merge the sorted runs.
     num_runs--;
     stage = 1;
@@ -321,7 +317,6 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
         {
             ind1 = ind2+1;
             ind2 = min(ind1 + k, num_runs) - 1;
-            cout<<ind1<<' '<<ind2<<'\n';
             merge(ind1, ind2, stage, cnt+1);
             cnt++;
         }
@@ -333,7 +328,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
 
 
 int main(){
-    string s = "random1.list";
+    string s = "english-subset.txt";
     string out = "out.txt";
     char* file_name = new char[s.length() + 1];
     char* file_name2 = new char[out.length() + 1];
