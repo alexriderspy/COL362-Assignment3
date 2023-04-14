@@ -28,7 +28,7 @@ vector<int> return_type;
 int fetch(vector<string> &a, int start_cnt, int i, string fname)
 {
     int cnt = 0;
-    int ind_cnt = 0;
+    int ind_cnt = start_cnt;
     int flag = 0;
     a.clear();
 
@@ -38,35 +38,39 @@ int fetch(vector<string> &a, int start_cnt, int i, string fname)
     // fseek
     string s1;
     int eof = 0;
-    while (myFile)
+    while (!myFile.eof())
     {
         getline(myFile, s1);
         //cout<<s1<<'\n';
-        if (eof == 0 && s1.length() == 0){
-            eof = 1;
-            continue;
+        // if (eof == 0 && s1.length() == 0){
+        //     eof = 1;
+        //     continue;
+        // }
+        if(myFile.eof()){
+            break;
         }
-        
-        cnt += s1.length()+1;
+        cnt += s1.length();
+        ind_cnt += s1.length() +1;
         if (cnt <= Lb)
-            (a).push_back(s1+'\n');
+            a.push_back(s1);
         else
         {
             flag = 1;
+            ind_cnt = ind_cnt - s1.length() - 1;
             break; // ind will not be incremented, this string will be read again next time
         }
-        ind_cnt = cnt;
     }
-    cout<<"end\n";
+
+    //cout<<"end\n";
     myFile.close();
     if (flag == 0)
     {
         return_type.push_back(i);
     }
-    return ind_cnt+start_cnt; // the next start index
+    return ind_cnt; // the next start index
 }
 
-void write_to_file(string fname, vector<string> &content, int mode, int choice)
+void write_to_file(string fname, vector<string> &content, int mode)
 {
     fstream myFile;
     if (mode == 1){
@@ -79,7 +83,7 @@ void write_to_file(string fname, vector<string> &content, int mode, int choice)
     for (int i = 0; i < content.size(); ++i)
     {
         //content[i] = content[i]+'\n';
-        fin += content[i];
+        fin += content[i] + '\n';
     }
 
     myFile << fin;
@@ -131,7 +135,7 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
             if (wr == 1)
                 fname = string(output);
             int n = output_buffer.size();
-            write_to_file(fname, output_buffer, mode, 1);
+            write_to_file(fname, output_buffer, mode);
             mode = 1;
             output_buffer.clear();
             char_cnt = 0;
@@ -171,7 +175,7 @@ void merge(int ind1, int ind2, int stage, int num, const char *output, int wr)
             if (wr == 1)
                 fname = string(output);
             int n = output_buffer.size();
-            write_to_file(fname, output_buffer, mode, 1);
+            write_to_file(fname, output_buffer, mode);
             break;
         }
     }
@@ -181,7 +185,7 @@ int sort_and_store(vector<string> &arr, int num_runs)
 {
     sort(arr.begin(),arr.end());
     string fname = "temp.0." + to_string(num_runs);
-    write_to_file(fname, arr, 0, 0);
+    write_to_file(fname, arr, 0);
     arr.clear();
     return num_runs + 1;
 }
@@ -200,14 +204,18 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
     Lb = Mb / (k + 1);
     int total_keys=0;
     // Step 1. Make and store sorted runs
-    while (myFile)
+    while (!myFile.eof())
     {
         // cnt stores the the sum of lenghs SUPPOSING the new string is added to the list
         getline(myFile, s1);
         //cout<<s1<<'\n';
-        if (eof == 0 && s1.length() == 0){
-            eof = 1;
-            continue;
+        // if (eof == 0 && s1.length() == 0){
+        //     eof = 1;
+        //     continue;
+        // }
+
+        if(myFile.eof()){
+            break;
         }
         cnt += s1.length()+1;
         if (cnt > Mb)
@@ -215,7 +223,7 @@ int external_merge_sort_withstop(const char *input, const char *output, const lo
             cnt = 0;
             num_runs = sort_and_store(arr, num_runs);
         }
-        arr.push_back(s1+'\n');
+        arr.push_back(s1);
         total_keys++;
         if(total_keys == key_count)
             break;
