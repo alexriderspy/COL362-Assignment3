@@ -52,7 +52,7 @@ void insert(Trie* root, string str, int index)
 
 		/* taking ascii value to find index of
 		child node */
-		char ind = str[i] - ' ';
+		char ind = str[i] - '\0';
 
 		/* making new path if not already */
 		if (!node->child[ind])
@@ -94,7 +94,7 @@ void sort(vector<string>&arr){
 
     sorted_arr.clear();
 	for (int i = 0; i < size; i++){
-        // cout<<"inserting "<<arr[i];
+        cout<<"inserting "<<arr[i];
 		insert(root, arr[i], i);
     }
     
@@ -143,7 +143,7 @@ void push_pq(pq_type &pq, string st, int i)
     pair<string, int> temp;
     temp.first = st;
     temp.second = i;
-    (pq).push(temp);
+    pq.push(temp);
 }
 
 void write_to_file(string fname, vector<string>&content, int mode)
@@ -267,10 +267,10 @@ void merge(int ind1, int ind2, int stage, int num, const char* output , int wr){
 int sort_and_store(vector<string> &arr, int num_runs)
 {
     // cout<<"before2\n";
-    sort(arr.begin(), arr.end());
+    sort(arr);
     // cout<<"after1\n";
     string fname = "temp.0." + to_string(num_runs);
-    write_to_file(fname, arr, 0);
+    write_to_file(fname, sorted_arr, 0);
     (arr).clear();   
     return num_runs+1;
 }
@@ -341,7 +341,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
 
 int main(){
     auto start = chrono::steady_clock::now();
-    string s = "random.txt";
+    string s = "english.list";
     string out = "out.txt";
     char* file_name = new char[s.length() + 1];
     char* file_name2 = new char[out.length() + 1];
