@@ -109,7 +109,7 @@ int fetch(vector<string> *a, FILE * ptr, int start_ind, int i, string fname)
     (*a).clear();
     char* file_name = new char[fname.length() + 1];
     strcpy(file_name, fname.c_str());
-    // ptr = fopen(file_name, "r");
+    // ptr =  fopen(file_name, "r");
     while(fgets(buffer, bufferSize, ptr) != NULL) 
     {
         if(ind>=start_ind)
