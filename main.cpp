@@ -1,12 +1,13 @@
 #include<stdio.h>
 #include <stdlib.h>
-// #include <cstring>
+#include <cstring>
 #include <string>
 #include <cmath>
 #include <iostream>
 #include<vector>
 #include <map>
 #include <queue>
+#include<algorithm>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ const int MAX_CHAR = 256;
 #define Mb 100
 #define L 10 //max blocks from one temp file in one merge step
 #define Lb 100  //max characters from one temp file in one merge step
-#define bufferSize 1024
+#define bS 1024
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
 
 string sorted_arr[Mb];
@@ -110,7 +111,7 @@ int fetch(vector<string> *a, FILE * ptr, int start_ind, int i, string fname)
     char* file_name = new char[fname.length() + 1];
     strcpy(file_name, fname.c_str());
     // ptr =  fopen(file_name, "r");
-    while(fgets(buffer, bufferSize, ptr) != NULL) 
+    while(fgets(buffer, bS, ptr) != NULL) 
     {
         if(ind>=start_ind)
         {
@@ -258,73 +259,98 @@ void merge(int ind1, int ind2, int stage, int num){
     
 }
 
-int sort_and_store(vector<string> *arr, int num_runs)
-{
-    sort(*arr);
-    string fname = "temp.0." + to_string(num_runs);
-    write_to_file(fname, sorted_arr, (*arr).size(), 0);
-    (*arr).clear();   
-    return num_runs+1;
-}
-
 int external_merge_sort_withstop ( const char* input , const char* output , const long key_count , const int k = 2 , const int num_merges = 0 ){
 
     FILE* ptr;
     ptr = fopen(input, "r");
-    char* buffer = new char[bufferSize];
-    int stage, cnt = 0;
-    int num_runs = 1;
-    vector<string>arr;
-    char* out;
 
-    // int stop = 0;
-    // if (bufferSize < key_count) {
-    //     bufferSize = key_count;
-    //     stop = 1;
-    // }
-    // if (stop == 1){
-    //     //continue;
-    // }
+    long bufferSize = bS;
+    //cout<<bufferSize<<'\n';
+    char buffer[bufferSize];
+    cout<<sizeof(buffer)<<'\n';
+    //while stage
+    int stage = 0;
+    int num_runs = 1;
 
     //Step 1. Make and store sorted runs
-    while(fgets(buffer, bufferSize, ptr) != NULL) 
-    {
-        //cnt stores the the sum of lenghs SUPPOSING the new string is added to the list
-        cnt += sizeof(buffer)/sizeof(char)-1;   
-        if (cnt > Mb)
+    vector<string>arr;
+    char* out;
+    int cnt = 0;
+
+    int total_runs;
+    while(fgets(buffer, bufferSize, ptr) != NULL) {
+        //cout<<buffer;
+        cout<<sizeof(buffer)<<'\n';
+        cout<<sizeof(buffer[0])<<'\n';
+        int len = sizeof(buffer)/sizeof(char)-1;
+        cout<<buffer<<'\n'<<len<<'\n';
+        if (cnt + len <= bufferSize){
+            arr.push_back(buffer);
+            cnt += len;
+        }
+        else
         {
+            sort(arr);
             cnt = 0;
-            num_runs = sort_and_store(&arr, num_runs);
+            FILE* ptr_new;
+            string s = "temp.0." + to_string(num_runs);
+            char* char_array = new char[s.length() + 1];
+            strcpy(char_array, s.c_str());
+            ptr_new = fopen(char_array, "w");
+            string fin = "";
+            for (int i=0;i<arr.size();++i){
+                fin += sorted_arr[i];
+            }
+            char *a = new char[fin.size()];
+            strcpy(a, fin.c_str());
+            fputs(a, ptr_new);        
+            num_runs++;
+
+            arr.clear();
+            arr.push_back(buffer);
         }
-        arr.push_back(buffer);
     }
-    if (arr.size()!=0)
-        num_runs = sort_and_store(&arr, num_runs);
 
-    fclose(ptr);
-
-    //Step 2. Merge the sorted runs.
-    num_runs--;
-    stage = 1;
+    if (arr.size()!=0){
+        FILE* ptr_new;
+        string s = "temp.0." + to_string(num_runs);
+        char* char_array = new char[s.length() + 1];
+        strcpy(char_array, s.c_str());
+        ptr_new = fopen(char_array, "w");
+        string fin = "";
+        for (int i=0;i<arr.size();++i){
+            fin += sorted_arr[i];
+        }
+        char *a = new char[fin.size()+1];
+        strcpy(a, fin.c_str());
+        fputs(a, ptr_new);        
+        num_runs++;
     
-
-    while(num_runs>1)
-    {
-        // int temp = ceil((num_runs)*1.0/(M-1));
-        int ind1 = 0;
-        int ind2 = -1;
-        int cnt = 0;
-        while(ind2<num_runs-1)
-        {
-            
-            ind1 = ind2+1;
-            ind2 = min(ind1 + min(M-1, k), num_runs) - 1;
-            merge(ind1, ind2, stage, cnt+1);
-            cnt++;
-        }
-        num_runs = cnt;
-        stage++;
     }
+
+    total_runs = num_runs;
+    cout<<total_runs<<'\n';
+    //Step 2. Merge the sorted runs.
+    // num_runs--;
+    // stage = 1;
+
+    // while(num_runs>1)
+    // {
+    //     // int temp = ceil((num_runs)*1.0/(M-1));
+    //     int ind1 = 0;
+    //     int ind2 = -1;
+    //     int cnt = 0;
+    //     while(ind2<num_runs-1)
+    //     {
+            
+    //         ind1 = ind2+1;
+    //         ind2 = min(ind1 + min(M-1, k), num_runs) - 1;
+    //         merge(ind1, ind2, stage, cnt+1);
+    //         cnt++;
+    //     }
+    //     num_runs = cnt;
+    //     stage++;
+    // }
     return 0;
 }
 
