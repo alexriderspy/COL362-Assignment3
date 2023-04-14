@@ -16,7 +16,7 @@ const int MAX_CHAR = 256;
 #define M 10
 #define Mb (1<<29)
 
-#define bufferSize 1024
+#define bufferSize 1050
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
 
 int Lb;
