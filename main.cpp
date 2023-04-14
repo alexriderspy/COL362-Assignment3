@@ -84,7 +84,7 @@ bool preorder(Trie* node, vector<string> arr)
     return false;
 }
 
-void sort(vector<string> arr){
+void sort(vector<string>&arr){
 
     Trie* root = new Trie();
     int size = arr.size();    
@@ -264,12 +264,12 @@ void merge(int ind1, int ind2, int stage, int num){
     
 }
 
-int sort_and_store(vector<string> *arr, int num_runs)
+int sort_and_store(vector<string> &arr, int num_runs)
 {
-    sort(*arr);
+    sort(arr);
     string fname = "temp.0." + to_string(num_runs);
-    write_to_file(fname, sorted_arr, (*arr).size(), 0);
-    (*arr).clear();   
+    write_to_file(fname, sorted_arr, (arr).size(), 0);
+    (arr).clear();   
     return num_runs+1;
 }
 
@@ -293,12 +293,12 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
         if (cnt > Mb)
         {
             cnt = 0;
-            num_runs = sort_and_store(&arr, num_runs);
+            num_runs = sort_and_store(arr, num_runs);
         }
         arr.push_back(buffer);
     }
     if (arr.size()!=0)
-        num_runs = sort_and_store(&arr, num_runs);
+        num_runs = sort_and_store(arr, num_runs);
 
     fclose(ptr);
 
