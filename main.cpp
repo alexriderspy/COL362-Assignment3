@@ -14,7 +14,7 @@ using namespace std;
 const int MAX_CHAR = 256;
 
 #define M 10
-#define Mb (1<<29)
+#define Mb (1<<5)
 
 #define bufferSize 1050
 #define pq_type priority_queue<pair<string, int>, vector<pair<string, int> >, greater<pair<string, int> > >
@@ -49,7 +49,7 @@ void insert(Trie* root, string str, int index)
 
 		/* taking ascii value to find index of
 		child node */
-		char ind = str[i] - 'a';
+		char ind = str[i] - ' ';
 
 		/* making new path if not already */
 		if (!node->child[ind])
@@ -65,7 +65,7 @@ void insert(Trie* root, string str, int index)
 }
 
 /* function for preorder traversal */
-bool preorder(Trie* node, vector<string> arr)
+bool preorder(Trie* node, vector<string> &arr)
 {
 	if (node == NULL)
 		return false;
@@ -91,11 +91,12 @@ void sort(vector<string>&arr){
 
     sorted_arr.clear();
 	for (int i = 0; i < size; i++){
+        cout<<"inserting "<<arr[i];
 		insert(root, arr[i], i);
     }
     
     sz = 0;
-    
+    cout<<"inserted\n";
     preorder(root, arr);
     return;
 }
@@ -266,7 +267,9 @@ void merge(int ind1, int ind2, int stage, int num){
 
 int sort_and_store(vector<string> &arr, int num_runs)
 {
+    cout<<"before2\n";
     sort(arr);
+    cout<<"after1\n";
     string fname = "temp.0." + to_string(num_runs);
     write_to_file(fname, sorted_arr, (arr).size(), 0);
     (arr).clear();   
@@ -293,6 +296,7 @@ int external_merge_sort_withstop ( const char* input , const char* output , cons
         if (cnt > Mb)
         {
             cnt = 0;
+            cout<<"before\n";
             num_runs = sort_and_store(arr, num_runs);
         }
         arr.push_back(buffer);
